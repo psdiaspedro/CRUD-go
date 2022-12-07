@@ -17,41 +17,34 @@ type user struct {
 	Email	string `json:"email"`
 }
 
-//CreateUser() - Creates an user inside database
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 
-	//passo 1 - ler o corpo da request (com os dados do usuário)
 	bodyReq, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.Write([]byte("Reading body request has failed!"))
 		return
 	}
 
-	//passo 2 - criar um usuário do tipo da struct (ja no formato que queremos)
 	var user user
 
-	//passo 3 - Parsear o income JSON para user struct
 	if err = json.Unmarshal(bodyReq, &user); err != nil {
 		w.Write([]byte("Parsing JSON to struct has failed!"))
 		return
 	}
 
-	//passo 4 - Conectar no banco de dados
-	db, err := database.Conectar()
+	db, err := database.Conect()
 	if err != nil {
 		w.Write([]byte("Contecting to database has failed!"))
 		return
 	}
 	defer db.Close()
 
-	// PREPARE STATEMENT
 	statement, err := db.Prepare("insert into usuarios (name, email) values(?, ?)")
 	if err != nil {
 		w.Write([]byte("creating statement has failed!"))
 		return
 	}
 	defer statement.Close()
-
 
 	insert, err := statement.Exec(user.Name, user.Email)
 	if err != nil {
@@ -65,26 +58,20 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//STATUS CODE
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(fmt.Sprintf("User has been created! Id: %d", idInserted)))
 
 }
 
-//GetUser() - Get all users from database
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	
-	//Passo 1
-	//Como não vem corpo (pois é um get), a primeira coisa é abrir a conexão com o db
-	db, err := database.Conectar()
+	db, err := database.Conect()
 	if err != nil {
 		w.Write([]byte("Contecting to database has failed!"))
 		return
 	}
 	defer db.Close()
 
-	//Passo 2 - Fazer a busca dos usuários
-	// SELECT * FROM usuarios
 	rows, err := db.Query("SELECT * from usuarios")
 	if err != nil {
 		w.Write([]byte("Get users has failed"))
@@ -111,11 +98,8 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//GetUser() - Get an user from database
 func GetUser(w  http.ResponseWriter, r *http.Request) {
 
-	//Passo 1
-	//Nesse caso tem um parâmetro na rota, primeiro passo é ler
 	params := mux.Vars(r)
 
 	ID, err := strconv.ParseUint(params["id"], 10, 32)
@@ -124,7 +108,7 @@ func GetUser(w  http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
+	db, err := database.Conect()
 	if err != nil {
 		w.Write([]byte("conect to database has failed!"))
 		return
@@ -171,14 +155,13 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
+	db, err := database.Conect()
 	if err != nil {
 		w.Write([]byte("Contecting to database has failed!"))
 		return
 	}
 	defer db.Close()
 
-	// PREPARE STATEMENT
 	statement, err := db.Prepare("update usuarios set nome = ?, email = ? where id = ?")
 	if err != nil {
 		w.Write([]byte("creating statement has failed!"))
@@ -204,14 +187,13 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := database.Conectar()
+	db, err := database.Conect()
 	if err != nil {
 		w.Write([]byte("Contecting to database has failed!"))
 		return
 	}
 	defer db.Close()
 
-	// PREPARE STATEMENT
 	statement, err := db.Prepare("delete from usuarios where id = ?")
 	if err != nil {
 		w.Write([]byte("creating statement has failed!"))
